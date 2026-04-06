@@ -510,6 +510,43 @@ def test_inject_recalled_facts_local_dedupes_repeated_summaries():
     )
 
 
+def test_inject_recalled_facts_dedupes_same_summary_text_different_dates():
+    config = Config()
+    config.storage = Mock()
+    config.storage.driver = Mock()
+    config.storage.driver.entity.create.return_value = 1
+    config.entity_id = "test-entity"
+    invoke = BaseInvoke(config, "test_method")
+
+    kwargs = {"messages": [{"role": "user", "content": "What should I remember?"}]}
+    same_text = "The user discussed travel plans to Lisbon."
+    with patch("memori.memory.recall.Recall") as mock_recall:
+        mock_recall.return_value.search_facts.return_value = [
+            {
+                "id": 1,
+                "content": "User likes Portugal",
+                "similarity": 0.95,
+                "date_created": "2026-03-24 18:01:00",
+                "summaries": [
+                    {"content": same_text, "date_created": "2026-03-24 18:01:00"}
+                ],
+            },
+            {
+                "id": 2,
+                "content": "User booked flights",
+                "similarity": 0.91,
+                "date_created": "2026-03-25 09:00:00",
+                "summaries": [
+                    {"content": same_text, "date_created": "2026-03-25 09:00:00"}
+                ],
+            },
+        ]
+        result = inject_recalled_facts(invoke, kwargs)
+
+    context = result["messages"][0]["content"]
+    assert context.count(same_text) == 1
+
+
 def test_inject_recalled_facts_filters_by_relevance():
     config = Config()
     config.storage = Mock()

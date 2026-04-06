@@ -130,15 +130,13 @@ def _collect_cloud_summaries_from_facts(
     facts: list[RecallFact],
 ) -> list[CloudRecallSummary]:
     summaries: list[CloudRecallSummary] = []
-    seen: set[tuple[str, str]] = set()
+    seen: set[str] = set()
 
-    def _key(summary: CloudRecallSummary) -> tuple[str, str] | None:
+    def _content_key(summary: CloudRecallSummary) -> str | None:
         content = summary.get("content")
-        if not isinstance(content, str) or not content:
+        if not isinstance(content, str) or not content.strip():
             return None
-        date_created = summary.get("date_created")
-        date_text = date_created if isinstance(date_created, str) else ""
-        return content, date_text
+        return content.strip()
 
     for fact in facts:
         if _is_str_object_mapping(fact):
@@ -147,10 +145,10 @@ def _collect_cloud_summaries_from_facts(
                 for summary in _collect_cloud_summary_items(
                     cast(list[object], summaries_raw)
                 ):
-                    summary_key = _key(summary)
-                    if summary_key is None or summary_key in seen:
+                    key = _content_key(summary)
+                    if key is None or key in seen:
                         continue
-                    seen.add(summary_key)
+                    seen.add(key)
                     summaries.append(summary)
         elif hasattr(fact, "summaries"):
             summaries_raw = fact.summaries
@@ -158,10 +156,10 @@ def _collect_cloud_summaries_from_facts(
                 for summary in _collect_cloud_summary_items(
                     cast(list[object], summaries_raw)
                 ):
-                    summary_key = _key(summary)
-                    if summary_key is None or summary_key in seen:
+                    key = _content_key(summary)
+                    if key is None or key in seen:
                         continue
-                    seen.add(summary_key)
+                    seen.add(key)
                     summaries.append(summary)
     return summaries
 

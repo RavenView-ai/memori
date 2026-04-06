@@ -52,18 +52,16 @@ def format_recalled_fact_lines(
 
 def format_recalled_summary_lines(summaries: list[dict[str, object]]) -> list[str]:
     lines: list[str] = []
-    seen: set[tuple[str, str]] = set()
+    seen: set[str] = set()
     for summary in summaries:
         content = summary.get("content")
-        if not isinstance(content, str) or not content:
+        if not isinstance(content, str) or not content.strip():
             continue
 
-        date_created = summary.get("date_created")
-        date_key = date_created if isinstance(date_created, str) else ""
-        summary_key = (content, date_key)
-        if summary_key in seen:
+        content_key = content.strip()
+        if content_key in seen:
             continue
-        seen.add(summary_key)
+        seen.add(content_key)
 
         ts = format_date_created(summary.get("date_created"))
         if ts:
@@ -153,7 +151,6 @@ def inject_recalled_facts(invoke, kwargs: dict) -> dict:
         + context_body
         + "\n</memori_context>"
     )
-    print(recall_context)
     if llm_is_anthropic(
         invoke.config.framework.provider, invoke.config.llm.provider
     ) or llm_is_bedrock(invoke.config.framework.provider, invoke.config.llm.provider):
